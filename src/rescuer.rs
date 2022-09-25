@@ -35,13 +35,15 @@ struct MediaTree {
 }
 
 pub struct MusicRescuer {
-    media_tree: MediaTree
+    media_tree: MediaTree,
+    progress_counter: usize
 }
 
 impl MusicRescuer {
     pub fn new() -> Self {
         return Self{
-            media_tree: MediaTree{ artists: std::collections::HashMap::new() }
+            media_tree: MediaTree{ artists: std::collections::HashMap::new() },
+            progress_counter: 0
         };
     }
 
@@ -66,6 +68,7 @@ impl MusicRescuer {
 
     fn rescue_file(&mut self, file: &std::path::Path) {
         if let Ok(tag) = audiotags::Tag::new().read_from_path(file) {
+            self.report_progress();
             if let (Some(artist), Some(album), Some(year)) = (tag.artist(), tag.album_title(), tag.year()) {
                 if let (Some(title), Some(track_n), Some(file_s)) = (tag.title(), tag.track_number(), file.to_str()) {
                     self.add_track(file_s, artist, album, year, track_n as usize, title);
@@ -87,6 +90,13 @@ impl MusicRescuer {
             alb.tracks.resize(track_number, None);
         }
         alb.tracks[track_number - 1] = Some(Track{title: title.to_string(), file: file.to_string()});
+    }
+
+    fn report_progress(&mut self) {
+        self.progress_counter += 1;
+        if self.progress_counter % 100 == 0 {
+            println!("Progress: {} items processed", self.progress_counter);
+        }
     }
 }
 
