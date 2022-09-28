@@ -43,6 +43,7 @@ impl MusicRescuer {
     }
 
     pub fn print_report(&self) {
+        println!("======\nREPORT\n======");
         println!("Rescued: {}\nErrors: {}", self.progress_counter, self.error_counter);
     }
 
@@ -54,7 +55,7 @@ impl MusicRescuer {
         if let Ok(tag) = audiotags::Tag::new().read_from_path(file) {
             self.rescue_audio(file, tag.as_ref());
         } else {
-            eprintln!("Error: can't read audio file {}", file.display());
+            eprintln!("Warning: can't read audio file {}", file.display());
         }
     }
 

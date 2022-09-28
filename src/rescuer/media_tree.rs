@@ -3,7 +3,8 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize, Clone)]
 struct Track {
     pub title: String,
-    pub file: String
+    pub file: String,
+    pub new_file: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -70,8 +71,10 @@ impl MediaTree {
         });
 
         let art = self.artists.entry(artist.to_string()).or_insert(Artist::new());
-        let trc = file.to_str().and_then(|f| {
-            Some(Track{title: title.to_string(), file: f.to_string()})
+        let trc = Some(Track{
+            title: title.to_string(),
+            file: file.to_string_lossy().to_string(),
+            new_file: new_file_path.as_ref().and_then(|p| Some(p.to_string_lossy().to_string()))
         });
         if let Some(alb) = art.albums.get_mut(album) {
             if alb.tracks.len() < track_number {
