@@ -100,7 +100,7 @@ impl MediaTree {
     }
 
     fn clean_bad_chars(mut s: String) -> String {
-        const BAD_CHARS: [char; 10] = ['<', '>', ':', '"', '\\', '/', '|', '?', '*', ','];
+        const BAD_CHARS: [char; 10] = ['<', '>', ':', '"', '\\', '/', '|', '?', '*', '.'];
         s.retain(|c| !BAD_CHARS.contains(&c));
         return s;
     }
