@@ -87,11 +87,15 @@ impl MediaTree {
             alb.tracks[track_number - 1] = trc;
             art.albums.insert(album.to_string(), alb);
             if let Some(album_path) = new_file_path.as_ref().and_then(|f| f.parent()) {
-                std::fs::create_dir_all(album_path).unwrap();
+                if let Err(e) = std::fs::create_dir_all(album_path) {
+                    panic!("Fatal: can't create dir {}; {}", album_path.display(), e);
+                }
             }
         }
         if let Some(file_path) = new_file_path {
-            std::fs::rename(file, file_path).unwrap();
+            if let Err(e) = std::fs::rename(file, &file_path) {
+                panic!("Fatal: can't mv file {}; {}", file_path.display(), e);
+            }
         }
     }
 
