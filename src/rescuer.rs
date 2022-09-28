@@ -1,54 +1,26 @@
-use serde::{Serialize, Deserialize};
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Track {
-    pub title: String,
-    pub file: String
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Album {
-    pub year: i32,
-    pub tracks: Vec<Option<Track>>
-}
-
-impl Album {
-    pub fn new(y: i32) -> Self {
-        return Self{ year: y, tracks: Vec::new() }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Artist {
-    pub albums: std::collections::HashMap<String, Album>
-}
-
-impl Artist {
-    pub fn new() -> Self {
-        return Self{ albums: std::collections::HashMap::new() }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct MediaTree {
-    pub artists: std::collections::HashMap<String, Artist>
-}
+mod media_tree;
 
 pub struct MusicRescuer {
-    media_tree: MediaTree,
-    progress_counter: usize
+    media_tree: media_tree::MediaTree,
+    progress_counter: usize,
+    error_counter: usize
 }
 
 impl MusicRescuer {
     pub fn new() -> Self {
         return Self{
-            media_tree: MediaTree{ artists: std::collections::HashMap::new() },
-            progress_counter: 0
+            media_tree: media_tree::MediaTree::new(),
+            progress_counter: 0,
+            error_counter: 0
         };
     }
 
-    pub fn to_json(&self) -> serde_json::Result<String> {
-        return serde_json::to_string_pretty(&self.media_tree);
+    pub fn with_target(target: &std::path::Path) -> Self {
+        return Self{
+            media_tree: media_tree::MediaTree::with_root(target),
+            progress_counter: 0,
+            error_counter: 0
+        };
     }
 
     pub fn rescue_dir(&mut self, dir: &std::path::Path) {
@@ -66,30 +38,39 @@ impl MusicRescuer {
         }
     }
 
+    pub fn to_json(&self) -> serde_json::Result<String> {
+        return serde_json::to_string_pretty(&self.media_tree);
+    }
+
+    pub fn print_report(&self) {
+        println!("Rescued: {}\nErrors: {}", self.progress_counter, self.error_counter);
+    }
+
     fn rescue_file(&mut self, file: &std::path::Path) {
+        if file.extension().is_none() {
+            eprintln!("Note: skipping not an audio file {}", file.display());
+            return;
+        }
         if let Ok(tag) = audiotags::Tag::new().read_from_path(file) {
-            self.report_progress();
-            if let (Some(artist), Some(album), Some(year)) = (tag.artist(), tag.album_title(), tag.year()) {
-                if let (Some(title), Some(track_n), Some(file_s)) = (tag.title(), tag.track_number(), file.to_str()) {
-                    self.add_track(file_s, artist, album, year, track_n as usize, title);
-                } else {
-                    eprintln!("Error: incorrect track data {}", file.display());
-                }
-            } else {
-                eprintln!("Error: incorrect artist/album data {}", file.display());
-            }
+            self.rescue_audio(file, tag.as_ref());
         } else {
             eprintln!("Error: can't read audio file {}", file.display());
         }
     }
 
-    fn add_track(&mut self, file: &str, artist: &str, album: &str, year: i32, track_number: usize, title: &str) {
-        let art = self.media_tree.artists.entry(artist.to_string()).or_insert(Artist::new());
-        let alb = art.albums.entry(album.to_string()).or_insert(Album::new(year));
-        if alb.tracks.len() < track_number {
-            alb.tracks.resize(track_number, None);
+    fn rescue_audio(&mut self, file: &std::path::Path, tag: &dyn audiotags::AudioTag) {
+        if let (Some(artist), Some(album), Some(year)) = (tag.artist(), tag.album_title(), tag.year()) {
+            if let (Some(title), Some(track_n)) = (tag.title(), tag.track_number()) {
+                self.report_progress();
+                self.media_tree.add_track(file, artist, album, year, track_n as usize, title);
+            } else {
+                self.report_error();
+                eprintln!("Error: incorrect track data {}", file.display());
+            }
+        } else {
+            self.report_error();
+            eprintln!("Error: incorrect artist/album data {}", file.display());
         }
-        alb.tracks[track_number - 1] = Some(Track{title: title.to_string(), file: file.to_string()});
     }
 
     fn report_progress(&mut self) {
@@ -97,6 +78,10 @@ impl MusicRescuer {
         if self.progress_counter % 100 == 0 {
             println!("Progress: {} items processed", self.progress_counter);
         }
+    }
+
+    fn report_error(&mut self) {
+        self.error_counter += 1;
     }
 }
 
