@@ -62,10 +62,10 @@ impl MediaTree {
     {
         let new_file_path = self.root.as_ref().and_then(|root| {
             let mut path = root.clone();
-            path.push(artist);
-            path.push(format!("{} - {}", year, album));
+            path.push(MediaTree::clean_bad_chars(artist.to_string()));
+            path.push(MediaTree::clean_bad_chars(format!("{} - {}", year, album)));
             file.extension().and_then(|e| e.to_str()).and_then(|ext| {
-                path.push(format!("{} - {}.{}", track_number, title, ext));
+                path.push(MediaTree::clean_bad_chars(format!("{} - {}.{}", track_number, title, ext)));
                 Some(path)
             })
         });
@@ -93,5 +93,11 @@ impl MediaTree {
         if let Some(file_path) = new_file_path {
             std::fs::rename(file, file_path).unwrap();
         }
+    }
+
+    fn clean_bad_chars(mut s: String) -> String {
+        const BAD_CHARS: [char; 9] = ['<', '>', ':', '"', '\\', '/', '|', '?', '*'];
+        s.retain(|c| !BAD_CHARS.contains(&c));
+        return s;
     }
 }
