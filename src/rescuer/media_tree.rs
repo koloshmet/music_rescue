@@ -62,8 +62,8 @@ impl MediaTree {
     {
         let new_file_path = self.root.as_ref().and_then(|root| {
             let mut path = root.clone();
-            path.push(Self::clean_bad_chars(artist.to_string()));
-            path.push(Self::clean_bad_chars(format!("{} - {}", year, album)));
+            path.push(Self::clean_bad_chars(artist.to_string()).trim());
+            path.push(Self::clean_bad_chars(format!("{} - {}", year, album)).trim());
             file.extension().and_then(|e| e.to_str()).and_then(|ext| {
                 path.push(format!("{} - {}.{}", track_number, Self::clean_bad_chars(title.to_string()), ext));
                 Some(path)
