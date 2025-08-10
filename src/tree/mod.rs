@@ -39,7 +39,7 @@ impl MusicTree {
         year: i32,
         track_number: usize,
         title: &str,
-    ) {
+    ) -> bool {
         let new_file_path = file.extension().map(|ext| {
             let mut path =
                 std::path::PathBuf::from(Self::clean_bad_chars(artist_name.to_string()).trim());
@@ -62,13 +62,19 @@ impl MusicTree {
             if album.tracks.len() < track_number {
                 album.tracks.resize(track_number, None);
             }
-            album.tracks[track_number - 1] = track;
+            let track_entry = &mut album.tracks[track_number - 1];
+            if track_entry.is_some() {
+                return false;
+            }
+            *track_entry = track;
         } else {
             let mut album = Album::new(year);
             album.tracks.resize(track_number, None);
             album.tracks[track_number - 1] = track;
             artist.albums.insert(album_title.to_string(), album);
         }
+
+        true
     }
 
     fn clean_bad_chars(mut s: String) -> String {

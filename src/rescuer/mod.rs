@@ -128,8 +128,14 @@ impl MusicRescuer {
             return self.reporter.report_error(RescueErrorLevel::Track, file);
         };
 
-        self.reporter.report_progress();
-        self.music_tree
-            .add_track(file, artist, album, year, track_n as usize, title);
+        if !self
+            .music_tree
+            .add_track(file, artist, album, year, track_n as usize, title)
+        {
+            self.reporter
+                .report_error(RescueErrorLevel::Duplicate, file);
+        } else {
+            self.reporter.report_progress();
+        }
     }
 }

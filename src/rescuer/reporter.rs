@@ -37,6 +37,9 @@ impl Reporter {
             RescueErrorLevel::Track => {
                 eprintln!("Error: incorrect track data {}", file.display());
             }
+            RescueErrorLevel::Duplicate => {
+                eprintln!("Note: found duplicate {}", file.display());
+            }
             RescueErrorLevel::RescueExists => {
                 eprintln!("Warning: target file {} already exists", file.display());
             }
@@ -49,5 +52,6 @@ pub(super) enum RescueErrorLevel {
     Data,
     Album,
     Track,
+    Duplicate,
     RescueExists,
 }
